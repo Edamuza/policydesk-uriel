@@ -60,7 +60,7 @@ function EvaluationsPage() {
       setProgress({ done: 0, total: s.cases.length });
       for (let i = 0; i < s.cases.length; i++) {
         let r = await runEvalItem({ data: { runId: id, caseId: s.cases[i]!.id } });
-        if (!r.ok && (r.status === 429 || (r.status ?? 0) >= 500)) {
+        if (!r.ok && (r.status === 429 || r.status === 504 || (r.status ?? 0) >= 500)) {
           await new Promise((res) => setTimeout(res, 4000));
           r = await runEvalItem({ data: { runId: id, caseId: s.cases[i]!.id } });
         }
