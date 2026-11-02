@@ -63,7 +63,8 @@ describe("Ask page effect cleanup", () => {
       fireEvent.click(marker);
     });
     expect(await screen.findByText(/10 paid sick leave days per year/)).toBeInTheDocument();
-    expect(screen.getByText(/Sick Leave/)).toBeInTheDocument();
+    expect(screen.getByText("§ Sick Leave")).toBeInTheDocument();
+    expect(screen.getByText("Leave Policy")).toBeInTheDocument();
 
     // This re-render runs the previous effect's cleanup — the crash QA reported.
     await ask("Do I need approval before working overtime?");
