@@ -15,3 +15,4 @@
 - Ask and Evaluations share one pipeline (`answerQuestion`) so eval scores reflect real behaviour; change prompts/threshold there only.
 - Seed rows ship without embeddings; `ensureEmbeddings` backfills missing vectors before retrieval, because migrations cannot call the embedding API.
 - Seed content lives in `src/lib/seed-data.ts` and is used by both the seed migration and Reset demo data; keep them in sync.
+- React effect callbacks always use a block body and never return a value: recent Chromium makes `Element.scrollIntoView()` resolve to a Promise, which React would then invoke as the effect's cleanup and crash the route. `src/test/ask-effect-cleanup.test.tsx` guards this.
