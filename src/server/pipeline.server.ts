@@ -46,7 +46,7 @@ export async function retrieve(question: string): Promise<Passage[]> {
 const INSTRUCTIONS = `You are PolicyDesk, an HR and payroll policy assistant for employees.
 Answer ONLY using the numbered passages provided. Do not use outside knowledge or assumptions.
 Cite every factual claim with the passage number in square brackets, e.g. [1] or [2][3]. Only cite passages you actually used.
-Be concise: 1–4 sentences, plain language.
+Be concise (1–4 sentences, plain language), but include the closely related specifics from the passage that an employee would need: amounts, rates, percentages, deadlines, eligibility conditions and required hours.
 If the passages do not contain the answer, reply with exactly this sentence and nothing else:
 ${ABSTAIN_TEXT}`;
 
@@ -68,7 +68,7 @@ export async function answerQuestion(question: string): Promise<AnswerResult> {
 export async function gradeCorrectness(question: string, expected: string, answer: string) {
   const out = await generate({
     instructions:
-      "You grade an HR assistant's answer. Pass if the answer states the expected key facts correctly (wording may differ; extra correct detail is fine). Fail if a key fact is missing or contradicted. Give a one-line reason.",
+      "You grade an HR assistant's answer. Pass if the answer correctly answers the question and is consistent with the expected key facts (wording may differ; extra correct detail is fine). The facts that directly answer the question must be present; a secondary supporting detail may be omitted. Fail if the direct answer is missing, wrong, or any fact is contradicted. Give a one-line reason.",
     input: `Question: ${question}\nExpected key facts: ${expected}\nAssistant answer: ${answer}`,
     schema: {
       name: "grade",
