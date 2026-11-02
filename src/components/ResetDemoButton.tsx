@@ -25,7 +25,7 @@ export function ResetDemoButton() {
       const r = await resetDemo();
       if (!r.ok) throw new Error(r.error);
       await qc.invalidateQueries();
-      toast.success("Demo data restored: 3 documents and 15 test questions.");
+      toast.success("Demo data restored: 3 sample documents and 15 test questions. Evaluation history was kept.");
     } catch (e) {
       toast.error((e as Error).message || "Could not reset demo data.");
     } finally {
@@ -44,7 +44,7 @@ export function ResetDemoButton() {
         <AlertDialogHeader>
           <AlertDialogTitle>Reset demo data?</AlertDialogTitle>
           <AlertDialogDescription>
-            This removes added documents and evaluation history, and restores the 3 sample policies and 15 test questions.
+            This deletes any documents you added and restores the 3 sample policies and the 15 test questions. Evaluation run history is kept.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

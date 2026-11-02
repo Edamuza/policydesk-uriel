@@ -14,6 +14,52 @@ const str = (v: unknown, max: number, name: string) => {
   return v.trim();
 };
 
+type Db = Awaited<typeof import("@/integrations/supabase/client.server")>["supabaseAdmin"];
+
+/** Compute run percentages from stored results and mark it finished. */
+async function finalizeRun(db: Db, runId: string, status: "completed" | "incomplete") {
+  const { pct } = await import("./policy");
+  const { data: rows, error } = await db
+    .from("eval_results")
+    .select("overall_pass, correctness_pass, citation_pass, abstention_pass")
+    .eq("run_id", runId);
+  if (error) throw error;
+  const r = rows ?? [];
+  const n = r.length;
+  await db
+    .from("eval_runs")
+    .update({
+      status,
+      completed: n,
+      overall_pct: pct(r.filter((x) => x.overall_pass).length, n),
+      correctness_pct: pct(r.filter((x) => x.correctness_pass).length, n),
+      citation_pct: pct(r.filter((x) => x.citation_pass).length, n),
+      abstention_pct: pct(r.filter((x) => x.abstention_pass).length, n),
+      finished_at: new Date().toISOString(),
+    })
+    .eq("id", runId);
+}
+
+/** Finalize runs left "running" for over 15 minutes (e.g. the tab was closed mid-run). */
+async function cleanupStale(db: Db) {
+  const cutoff = new Date(Date.now() - 15 * 60_000).toISOString();
+  const { data, error } = await db.from("eval_runs").select("id").eq("status", "running").lt("created_at", cutoff);
+  if (error) throw error;
+  for (const r of data ?? []) await finalizeRun(db, r.id, "incomplete");
+  return (data ?? []).length;
+}
+
+export const cleanupStaleRuns = createServerFn({ method: "POST" }).handler(
+  async (): Promise<{ ok: true; finalized: number } | Fail> => {
+    try {
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      return { ok: true, finalized: await cleanupStale(supabaseAdmin) };
+    } catch (e) {
+      return fail(e);
+    }
+  },
+);
+
 export const askQuestion = createServerFn({ method: "POST" })
   .inputValidator((d: { question: string }) => ({ question: str(d?.question, 1000, "Question") }))
   .handler(async ({ data }): Promise<({ ok: true } & AnswerResult) | Fail> => {
@@ -85,7 +131,6 @@ export const resetDemo = createServerFn({ method: "POST" }).handler(async (): Pr
     const { SEED_DOCUMENTS, SEED_TESTS } = await import("./seed-data");
     const { chunkDocument } = await import("./chunker");
     const none = "00000000-0000-0000-0000-000000000000";
-    await db.from("eval_runs").delete().neq("id", none);
     await db.from("documents").delete().neq("id", none);
     await db.from("test_cases").delete().neq("id", none);
     for (let i = 0; i < SEED_DOCUMENTS.length; i++) {
@@ -112,6 +157,7 @@ export const startEvalRun = createServerFn({ method: "POST" }).handler(
   async (): Promise<{ ok: true; runId: string; cases: { id: string }[] } | Fail> => {
     try {
       const { supabaseAdmin: db } = await import("@/integrations/supabase/client.server");
+      await cleanupStale(db);
       const { data: cases, error } = await db.from("test_cases").select("id").order("position");
       if (error) throw error;
       if (!cases?.length) throw new Error("The test set is empty.");
@@ -195,26 +241,7 @@ export const finishEvalRun = createServerFn({ method: "POST" })
   .handler(async ({ data }): Promise<{ ok: true } | Fail> => {
     try {
       const { supabaseAdmin: db } = await import("@/integrations/supabase/client.server");
-      const { pct } = await import("./policy");
-      const { data: rows, error } = await db
-        .from("eval_results")
-        .select("overall_pass, correctness_pass, citation_pass, abstention_pass")
-        .eq("run_id", data.runId);
-      if (error) throw error;
-      const r = rows ?? [];
-      const n = r.length;
-      await db
-        .from("eval_runs")
-        .update({
-          status: data.failed ? "incomplete" : "completed",
-          completed: n,
-          overall_pct: pct(r.filter((x) => x.overall_pass).length, n),
-          correctness_pct: pct(r.filter((x) => x.correctness_pass).length, n),
-          citation_pct: pct(r.filter((x) => x.citation_pass).length, n),
-          abstention_pct: pct(r.filter((x) => x.abstention_pass).length, n),
-          finished_at: new Date().toISOString(),
-        })
-        .eq("id", data.runId);
+      await finalizeRun(db, data.runId, data.failed ? "incomplete" : "completed");
       return { ok: true };
     } catch (e) {
       return fail(e);

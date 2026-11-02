@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { resultsQuery, runsQuery, testCasesQuery } from "@/lib/queries";
-import { finishEvalRun, runEvalItem, startEvalRun } from "@/lib/api.functions";
+import { cleanupStaleRuns, finishEvalRun, runEvalItem, startEvalRun } from "@/lib/api.functions";
 
 export const Route = createFileRoute("/evaluations")({
   head: () => ({
@@ -43,6 +43,14 @@ function EvaluationsPage() {
   const runId = selectedRun ?? latest?.id ?? null;
   const run = runs.data?.find((r) => r.id === runId) ?? null;
   const results = useQuery(resultsQuery(runId));
+
+  useEffect(() => {
+    cleanupStaleRuns()
+      .then((r) => {
+        if (r.ok && r.finalized > 0) void qc.invalidateQueries({ queryKey: ["eval_runs"] });
+      })
+      .catch(() => {});
+  }, [qc]);
 
   useEffect(() => {
     if (progress) void qc.invalidateQueries({ queryKey: ["eval_results"] });
