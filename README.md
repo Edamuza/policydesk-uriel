@@ -1,89 +1,123 @@
-# Policydesk Uriel
+# PolicyDesk
 
-Build this complete app now, all screens and the backend, following the spec below. Use Lovable Cloud and Lovable AI; do not ask me for API keys.
+An HR and payroll policy assistant that answers only from company documents, cites every passage it uses, and measures its own accuracy.
 
-# Project 1 — PolicyDesk: HR & payroll policy assistant with citations and an accuracy dashboard
+**Live demo:** https://policydesk-uriel.lovable.app
 
-Build "PolicyDesk", an AI assistant that answers employee questions about HR and payroll policies using only the company's own documents. Every answer cites the exact passage it used, and an evaluation dashboard proves how accurate it is.
+Demo app. All sample data is fictional.
 
-## Screens
-1. **Ask** (home): a chat-style Q&A. The user types a question; the app retrieves the most relevant passages from the knowledge base and the AI answers using only those passages. Answers show inline citation markers like [1], [2]; clicking a marker reveals the cited passage, its document title and section heading. If no passage is relevant enough, the assistant replies exactly in this spirit: "I couldn't find this in the company documents. Please ask HR." and shows no citations. Show 4 suggested starter questions.
-2. **Knowledge base**: list documents (title, sections/chunks count, added date). Add a document by pasting text or uploading a .txt/.md file (title + content). On save, split into passages by heading/paragraph (~400–800 characters, keep the section heading with each chunk) and index them. Allow viewing and deleting a document.
-3. **Evaluations**: a test set table (question, expected key facts, expected source document, "should abstain" flag). Seed 15 test questions: 12 answerable from the sample documents and 3 that are NOT covered (the correct behavior is to abstain). A "Run evaluation" button runs every test question through the exact same answer pipeline, then grades each result:
-   - Correctness: an AI grader compares the answer to the expected key facts → pass/fail with a one-line reason.
-   - Citation accuracy: pass if at least one citation comes from the expected source document.
-   - Abstention: for "should abstain" items, pass only if the assistant abstained; for others, fail if it abstained.
-   Show KPIs (overall pass rate %, correctness %, citation accuracy %, abstention accuracy %), a per-question results table with filters (all / failed), and a history of past runs with their scores so improvements are visible over time. Show progress while a run is in progress (e.g., "7 / 15").
-4. **About this project** (see common requirements).
+![Ask screen answering a sick leave question with a citation to the Leave Policy](docs/screenshots/ask-answer-with-citation.png)
 
-## Retrieval
-- Prefer vector search (pgvector) with embeddings from Lovable AI if available. If embeddings are not available through Lovable AI, use Postgres full-text search (tsvector + ts_rank, English config) with a relevance threshold. Either way, return the top 4 passages with document title, section heading and score, and use a threshold so irrelevant questions abstain.
-- The answer prompt must instruct the model to use only the provided passages, cite them by number, and abstain when they don't contain the answer.
+## The problem
 
-## Seed documents (fictional; create these as realistic, detailed policy text with headings)
-1. "Bayanihan Digital Inc. — Employee Handbook (fictional)": sections on working hours (8 hours/day, 1-hour unpaid lunch, flexible start 7–10 AM), remote work (up to 3 days/week with manager approval, core hours 10 AM–4 PM), overtime (must be pre-approved in the HR system; paid at 125% of the hourly rate on regular days), attendance (geofenced clock-in at the office; remote check-in via the app), code of conduct, equipment (company laptop, return within 5 working days of separation).
-2. "Bayanihan Digital Inc. — Leave Policy (fictional)": vacation leave 15 days/year accrued monthly (1.25/month), sick leave 10 days/year, leave requests filed at least 5 working days ahead for vacation, sick leave over 2 consecutive days needs a medical certificate, unused vacation leave up to 5 days converts to cash at year end, bereavement leave 3 days, birthday leave 1 day.
-3. "Bayanihan Digital Inc. — Payroll & Benefits Guide (fictional)": payroll every 15th and last day of the month (if a weekend, the Friday before), payslips available in the app, 13th-month pay equal to one-twelfth of total basic salary earned in the calendar year and paid on or before December 24, statutory deductions listed as SSS, PhilHealth, Pag-IBIG and withholding tax (no specific contribution rates — say rates follow current government tables), salary disputes filed with HR within 30 days, HMO coverage after 3 months for employees plus 1 dependent.
-Add a footnote in each: "Fictional company. Sample policy for demonstration only; not legal advice."
+Employees ask HR the same policy questions over and over: leave balances, payroll dates, overtime rules. HR staff spend time answering them, and a general chatbot can't be trusted to answer, because it may invent a policy that sounds right. A useful assistant has to show where each answer came from and say "I don't know" when the documents don't cover the question.
 
-## Seed test set examples (write all 15)
-- "How many vacation leave days do I get per year?" → 15 days, accrued 1.25/month → Leave Policy.
-- "When is the 13th-month pay released?" → on or before December 24, one-twelfth of basic salary earned → Payroll & Benefits Guide.
-- "Do I need approval before working overtime?" → yes, pre-approved in the HR system; 125% on regular days → Employee Handbook.
-- Unanswerable examples: "What is the company's stock option plan?", "Can I bring my dog to the office?", "What is the CEO's salary?" → should abstain.
+## What it does
 
-## Acceptance checks (QA will test these in the published app)
-- A1 Asking "How many sick leave days do I get?" returns 10 days with a citation to the Leave Policy; clicking the citation shows the passage.
-- A2 Asking "Can I bring my dog to the office?" abstains with no citations.
-- A3 Adding a new pasted document ("Travel policy (fictional)": per diem PHP 1,500/day for out-of-town trips) and then asking "What is the travel per diem?" answers PHP 1,500 with a citation to the new document.
-- A4 Running the evaluation completes all 15 items with visible progress and shows KPIs and a per-question table; a new row appears in run history.
-- A5 Deleting the added document removes it, and the per diem question then abstains.
-- A6 Reset demo data restores the 3 documents and 15 test questions.
-- A7 About page renders; no console errors; mobile layout works.
+- **Ask:** chat-style Q&A. Answers include citation markers like [1]. Clicking a marker opens the cited passage with its document title, section heading and relevance score. Four starter questions are shown.
+- **Abstention:** if no passage is relevant enough, the reply is "I couldn't find this in the company documents. Please ask HR." with no citations.
+- **Knowledge base:** list, view, add and delete documents. New documents can be pasted or uploaded as .txt/.md. They are split into passages that keep their section heading, then embedded.
+- **Evaluations:** a 15-question test set, run through the same answer pipeline as Ask. It shows KPIs (overall, correctness, citation accuracy, abstention accuracy), a per-question table with an all/failed filter, live progress ("7 / 15") and a history of past runs.
+- **Reset demo data:** restores the 3 sample documents and 15 test questions and removes added documents. Run history is kept.
+- **About this project:** problem, approach, architecture and next steps.
 
-# Common requirements for all five portfolio apps (append to every Lovable spec)
+![Evaluations screen with KPIs and per-question results](docs/screenshots/evaluations-dashboard.png)
 
-These apps are portfolio pieces for Uriel Papa, who is applying for AI Solutions Engineer / Forward-Deployed Engineer roles. A hiring manager will open the published link and click around with no login and no setup. Everything must work on first visit.
+![Knowledge base screen listing the three sample policy documents](docs/screenshots/knowledge-base.png)
 
-## Stack and backend
-- Use Lovable Cloud for the database, file storage and edge functions.
-- Use Lovable AI (Lovable's built-in AI gateway) for every model call. Do not ask for, or depend on, any external API key (no OpenAI/Anthropic/OpenRouter keys).
-- All model calls happen in edge functions, never in the browser.
-- No login. This is a public demo. Keep Row Level Security enabled on every table, with policies that let the demo work (anonymous read of demo data; writes go through edge functions or narrowly scoped anon policies). The project must pass Lovable's security scan so it can be published.
-- Handle AI errors visibly: show a friendly error toast/message on rate limits (429), credits (402) or timeouts, never a blank screen or a spinner that never ends.
+## How it works
 
-## Demo data
-- Seed realistic sample data on first load (or via a migration) so every screen has content immediately. All sample businesses, people and documents are fictional and labeled as such.
-- Add a "Reset demo data" action (with confirm) that restores the seed state.
-- Show a slim banner: "Demo app — all sample data is fictional."
+The pattern is retrieval-augmented generation with a refusal threshold:
 
-## Portfolio framing
-- Add an "About this project" page reachable from the nav with four short sections: The problem (who has it, what it costs), The approach (how the app solves it, the AI pattern used), Architecture (frontend → edge functions → Lovable AI → database; list tables and functions), What I'd do next in a real deployment. Author: Uriel Papa, with links to github.com/Edamuza and linkedin.com/in/uriel-papa-vitese01.
-- Clean, professional, responsive UI (works at 375px phone width and on desktop). Consistent nav. Empty states, loading states and error states for every async action.
+1. The question is embedded with Lovable AI (`google/gemini-embedding-2`).
+2. A pgvector cosine search (`match_chunks` SQL function) returns the top 4 passages.
+3. Passages scoring below 0.70 are dropped. If none remain, the app abstains without calling the chat model.
+4. Otherwise the remaining passages are numbered and sent to the chat model (`openai/gpt-6-astra`) with instructions to use only those passages, cite them by number, and use the exact refusal sentence if they don't contain the answer.
+5. The server keeps only the passages the answer actually cited and returns them to the browser.
 
-## Quality bar
-- No console errors on load. No broken routes. Every button does something real.
-- Numbers shown in tables/KPIs must be computed from stored data, not hard-coded.
+The Evaluations screen calls the same `answerQuestion` function, so its scores reflect real behaviour. An AI grader (`gradeCorrectness`, JSON schema output) checks correctness against the expected key facts. Citation and abstention checks are deterministic rules in `gradeResult` (`src/lib/policy.ts`).
 
-This project was built with [Lovable](https://lovable.dev).
+Every AI call has a 45-second timeout. Rate limit (429), credit (402) and timeout (504) errors are shown to the user as messages, and the evaluation runner retries a failed item once.
 
-**Live app**: https://policydesk-uriel.lovable.app
+```mermaid
+flowchart LR
+  B[Browser<br/>Ask / Knowledge base / Evaluations] -->|createServerFn| F[src/lib/api.functions.ts<br/>askQuestion, addDocument, deleteDocument,<br/>resetDemo, startEvalRun, runEvalItem,<br/>finishEvalRun, cleanupStaleRuns]
+  B -->|read-only queries, anon SELECT| DB[(Postgres + pgvector<br/>Lovable Cloud)]
+  F --> P[src/server/pipeline.server.ts<br/>retrieve, answerQuestion,<br/>gradeCorrectness, ensureEmbeddings]
+  F --> C[src/lib/chunker.ts<br/>chunkDocument]
+  P --> AI[src/server/ai.server.ts<br/>embed, generate]
+  AI -->|embeddings + responses| GW[Lovable AI gateway]
+  P -->|match_chunks RPC| DB
+  F -->|writes, service role| DB
+```
 
-## Build with Lovable
+The browser reads demo tables directly under row-level security that allows anonymous SELECT only. All writes and all model calls go through server functions, so the AI key and the privileged database client never reach the browser.
 
-Continue developing this project in the [Lovable editor](https://lovable.dev/projects/3d6095b2-a704-4868-aa1b-7e0345b99083).
+## Data model
 
-- **Ship faster**: describe what you want to build and Lovable handles the code.
-- **Stay in sync**: every change made in Lovable is committed straight to this repository.
-- **Full ownership**: this code is yours. Push to `main` on GitHub and your changes sync back into Lovable, ready for your next prompt.
+| Table | What it holds |
+|---|---|
+| `documents` | Policy documents: title, full content, added date. |
+| `chunks` | Passages of each document: section heading, text, and a 3072-dimension embedding (`vector(3072)`). |
+| `test_cases` | Evaluation questions: expected key facts, expected source document, "should abstain" flag. |
+| `eval_runs` | One row per evaluation run: status (`running`, `completed`, `incomplete`), totals and the four percentage scores. |
+| `eval_results` | One row per question per run: answer, citations, pass/fail for each check and the grader's reason. |
 
-## Development
+Seed rows ship without embeddings. `ensureEmbeddings` fills in missing vectors before retrieval. Runs left in `running` for more than 15 minutes (for example, a closed tab) are marked `incomplete`, with scores computed from their saved results.
 
-Prefer working locally? You need Node.js and npm — [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating).
+## Quality and testing
+
+Results from browser QA of the published app:
+
+- Seed knowledge base: 3 fictional policy documents (Employee Handbook, Leave Policy, Payroll & Benefits Guide), 18 passages.
+- Evaluation set: 15 questions, 12 answerable and 3 that should be refused. The published app's evaluation run scored 100% on correctness, citation accuracy and abstention.
+- "How many sick leave days do I get?" answered "10 days" with a clickable citation to the Leave Policy.
+- "Can I bring my dog to the office?" was refused with no citations.
+- A newly pasted Travel policy was cited for "PHP 1,500 per day". After the document was deleted, the same question was refused.
+- A Chrome-specific crash was found in QA: a React effect returned the Promise from `scrollIntoView()`, and React called it as a cleanup function. It was fixed, and a regression test was added.
+
+Automated tests (Vitest, `npm test`):
+
+- `src/test/policy.test.ts`: grading rules for citation and abstention, percentage rounding, seed data (15 tests, 3 should-abstain), and the chunker keeping headings and passages under 800 characters.
+- `src/test/app-routing.test.tsx`: the `/` route resolves to the Ask page instead of "not found".
+- `src/test/ask-effect-cleanup.test.tsx`: the Ask page renders answers and survives a second question when `scrollIntoView` returns a Promise (the regression test for the crash above).
+
+## Tech stack
+
+- **Frontend:** React 19, TanStack Router, TanStack Query, Tailwind CSS v4, Radix UI / shadcn components, lucide-react icons.
+- **Server:** TanStack Start server functions (`createServerFn`), built with Vite.
+- **Database:** Postgres with pgvector on Lovable Cloud, accessed with `@supabase/supabase-js`. Row-level security on every table.
+- **AI:** Lovable AI gateway: `google/gemini-embedding-2` for embeddings, `openai/gpt-6-astra` for answers and grading.
+- **Hosting:** Lovable (edge runtime).
+- **Tests:** Vitest and Testing Library.
+
+## Run locally
+
+Prerequisites: Node 22.
 
 ```sh
-git clone <this-repository-url>
-cd <repository-name>
 npm i
 npm run dev
 ```
+
+Environment variables (names only):
+
+- `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_PROJECT_ID`
+- `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`, `VITE_SUPABASE_PROJECT_ID`
+- `LOVABLE_API_KEY` and the database service role key are server-side secrets provided by Lovable Cloud.
+
+Note: AI calls use the Lovable AI gateway, which only works with Lovable Cloud. To run elsewhere, replace the calls in `src/server/ai.server.ts` with your own model provider key.
+
+## Limitations and next steps
+
+- Public demo with no login. A real deployment would add single sign-on, per-employee access, and audit logs of questions and answers.
+- Anyone can add, delete or reset documents in the demo. A real deployment would limit document management to HR admins and keep version history.
+- The 0.70 relevance threshold was tuned on this small sample set. It would need re-tuning against a larger set of real employee questions.
+- The evaluation set has 15 questions. A real deployment would grow it from real questions and run it automatically whenever documents or prompts change.
+- Answers depend on the documents being current. A real deployment would sync from the HR system or document store instead of manual pasting.
+
+## Author
+
+Uriel Papa: [GitHub](https://github.com/Edamuza) · [LinkedIn](https://www.linkedin.com/in/uriel-papa-vitese01/)
+
+Built with Lovable (AI app builder) from a written spec, then tested against acceptance checks and fixed.
