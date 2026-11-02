@@ -146,7 +146,7 @@ export const resetDemo = createServerFn({ method: "POST" }).handler(async (): Pr
     const { error: e3 } = await db.from("test_cases").insert(SEED_TESTS.map((t, i) => ({ ...t, position: i + 1 })));
     if (e3) throw e3;
     const { ensureEmbeddings } = await import("@/server/pipeline.server");
-    await ensureEmbeddings().catch((e) => console.error("embedding backfill deferred", e));
+    await ensureEmbeddings();
     return { ok: true };
   } catch (e) {
     return fail(e);
