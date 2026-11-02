@@ -19,12 +19,13 @@ function mimicChromiumScrollIntoView() {
   };
 }
 
-function renderAskPage() {
+async function renderAskPage() {
   const router = createRouter({
     routeTree,
     history: createMemoryHistory(),
     context: { queryClient: new QueryClient() },
   });
+  await router.load();
   return render(<RouterProvider router={router} />);
 }
 
