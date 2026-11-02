@@ -9,6 +9,7 @@ vi.mock("@/lib/api.functions", () => ({ askQuestion: askMock }));
 
 describe("debug", () => {
   it("shows what happens after Enter", async () => {
+    Element.prototype.scrollIntoView = function () { return Promise.resolve(); };
     askMock.mockResolvedValue({ ok: true, answer: "ANSWERTEXT", citations: [], abstained: false });
     render(
       <QueryClientProvider client={new QueryClient()}>
