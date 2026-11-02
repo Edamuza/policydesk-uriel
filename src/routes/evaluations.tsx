@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { resultsQuery, runsQuery, testCasesQuery } from "@/lib/queries";
-import { finishEvalRun, runEvalItem, startEvalRun } from "@/lib/api.functions";
+import { cleanupStaleRuns, finishEvalRun, runEvalItem, startEvalRun } from "@/lib/api.functions";
 
 export const Route = createFileRoute("/evaluations")({
   head: () => ({
@@ -45,6 +45,14 @@ function EvaluationsPage() {
   const results = useQuery(resultsQuery(runId));
 
   useEffect(() => {
+    cleanupStaleRuns()
+      .then((r) => {
+        if (r.ok && r.finalized > 0) void qc.invalidateQueries({ queryKey: ["eval_runs"] });
+      })
+      .catch(() => {});
+  }, [qc]);
+
+  useEffect(() => {
     if (progress) void qc.invalidateQueries({ queryKey: ["eval_results"] });
   }, [progress, qc]);
 
@@ -60,7 +68,7 @@ function EvaluationsPage() {
       setProgress({ done: 0, total: s.cases.length });
       for (let i = 0; i < s.cases.length; i++) {
         let r = await runEvalItem({ data: { runId: id, caseId: s.cases[i]!.id } });
-        if (!r.ok && (r.status === 429 || (r.status ?? 0) >= 500)) {
+        if (!r.ok && (r.status === 429 || r.status === 504 || (r.status ?? 0) >= 500)) {
           await new Promise((res) => setTimeout(res, 4000));
           r = await runEvalItem({ data: { runId: id, caseId: s.cases[i]!.id } });
         }

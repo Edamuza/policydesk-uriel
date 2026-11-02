@@ -29,17 +29,45 @@ async function failure(res: Response): Promise<AiError> {
   return new AiError(res.status, msg || `AI request failed (${res.status}).`);
 }
 
+const TIMEOUT_MS = 45_000;
+const timeoutError = () => new AiError(504, "The AI took too long to respond. Please try again.");
+
+/** Abort controller whose timer can be re-armed (used as an idle timer while streaming). */
+function deadline() {
+  const ctrl = new AbortController();
+  let t: ReturnType<typeof setTimeout> | undefined;
+  const arm = () => {
+    if (t) clearTimeout(t);
+    t = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
+  };
+  arm();
+  return { signal: ctrl.signal, arm, clear: () => t && clearTimeout(t) };
+}
+
+function isAbort(e: unknown) {
+  return (e as { name?: string })?.name === "AbortError";
+}
+
 export async function embed(texts: string[]): Promise<number[][]> {
+  const d = deadline();
+  try {
   const res = await fetch(`${BASE}/embeddings`, {
     method: "POST",
+    signal: d.signal,
     headers: { Authorization: `Bearer ${key()}`, "Content-Type": "application/json", "X-Lovable-AIG-SDK": "fetch" },
     body: JSON.stringify({ model: EMBED_MODEL, input: texts }),
   });
   if (!res.ok) throw await failure(res);
   const j = (await res.json()) as { data: { index: number; embedding: number[] }[] };
   const out: number[][] = new Array(texts.length);
-  for (const d of j.data) out[d.index] = d.embedding;
+  for (const x of j.data) out[x.index] = x.embedding;
   return out;
+  } catch (e) {
+    if (isAbort(e)) throw timeoutError();
+    throw e;
+  } finally {
+    d.clear();
+  }
 }
 
 /** Streams a Responses call and returns the accumulated output text. */
@@ -57,8 +85,11 @@ export async function generate(opts: {
     reasoning: { effort: "low" },
   };
   if (opts.schema) body["text"] = { format: { type: "json_schema", name: opts.schema.name, schema: opts.schema.schema, strict: true } };
+  const d = deadline();
+  try {
   const res = await fetch(`${BASE}/responses`, {
     method: "POST",
+    signal: d.signal,
     headers: { Authorization: `Bearer ${key()}`, "Content-Type": "application/json", "X-Lovable-AIG-SDK": "fetch" },
     body: JSON.stringify(body),
   });
@@ -71,6 +102,7 @@ export async function generate(opts: {
   for (;;) {
     const { done, value } = await reader.read();
     if (done) break;
+    d.arm(); // idle timer: abort only if no bytes arrive for 45s
     buf += dec.decode(value, { stream: true });
     let idx;
     while ((idx = buf.indexOf("\n\n")) >= 0) {
@@ -92,4 +124,10 @@ export async function generate(opts: {
   }
   if (refusal && !text) throw new AiError(422, "The AI declined to answer this request.");
   return text.trim();
+  } catch (e) {
+    if (isAbort(e)) throw timeoutError();
+    throw e;
+  } finally {
+    d.clear();
+  }
 }
