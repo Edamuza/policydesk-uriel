@@ -1,9 +1,8 @@
-import { QueryClient } from "@tanstack/react-query";
-import { RouterProvider, createMemoryHistory, createRouter } from "@tanstack/react-router";
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { routeTree } from "@/routeTree.gen";
+import { Route as IndexRoute } from "@/routes/index";
 
 const { askMock } = vi.hoisted(() => ({ askMock: vi.fn() }));
 
@@ -19,15 +18,7 @@ function mimicChromiumScrollIntoView() {
   };
 }
 
-async function renderAskPage() {
-  const router = createRouter({
-    routeTree,
-    history: createMemoryHistory(),
-    context: { queryClient: new QueryClient() },
-  });
-  await router.load();
-  return render(<RouterProvider router={router} />);
-}
+const AskPage = IndexRoute.options.component as React.ComponentType;
 
 async function ask(text: string) {
   const box = screen.getByLabelText("Your question");
@@ -37,8 +28,7 @@ async function ask(text: string) {
 
 describe("Ask page effect cleanup", () => {
   afterEach(() => {
-    cleanup();
-    vi.clearAllMocks();
+    vi.restoreAllMocks();
   });
 
   it("renders the answer and survives a second question when scrollIntoView returns a Promise", async () => {
@@ -58,7 +48,11 @@ describe("Ask page effect cleanup", () => {
       abstained: false,
     });
 
-    await renderAskPage();
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <AskPage />
+      </QueryClientProvider>,
+    );
 
     await ask("How many sick leave days do I get?");
     await waitFor(() => expect(screen.getByText("You get 10 days of sick leave per year. [1]")).toBeInTheDocument());
