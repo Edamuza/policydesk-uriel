@@ -58,7 +58,7 @@ describe("Ask page effect cleanup", () => {
       abstained: false,
     });
 
-    renderAskPage();
+    await renderAskPage();
 
     await ask("How many sick leave days do I get?");
     await waitFor(() => expect(screen.getByText("You get 10 days of sick leave per year. [1]")).toBeInTheDocument());
