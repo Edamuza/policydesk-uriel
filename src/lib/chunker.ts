@@ -11,7 +11,7 @@ export function chunkDocument(text: string, title: string): Chunk[] {
     const m = line.match(/^#{1,6}\s+(.*)$/);
     if (m) {
       if (cur.body.join("").trim()) sections.push(cur);
-      cur = { heading: m[1].trim(), body: [] };
+      cur = { heading: (m[1] ?? "").trim(), body: [] };
     } else cur.body.push(line);
   }
   if (cur.body.join("").trim()) sections.push(cur);

@@ -59,10 +59,10 @@ function EvaluationsPage() {
       await qc.invalidateQueries({ queryKey: ["eval_runs"] });
       setProgress({ done: 0, total: s.cases.length });
       for (let i = 0; i < s.cases.length; i++) {
-        let r = await runEvalItem({ data: { runId: id, caseId: s.cases[i].id } });
+        let r = await runEvalItem({ data: { runId: id, caseId: s.cases[i]!.id } });
         if (!r.ok && (r.status === 429 || (r.status ?? 0) >= 500)) {
           await new Promise((res) => setTimeout(res, 4000));
-          r = await runEvalItem({ data: { runId: id, caseId: s.cases[i].id } });
+          r = await runEvalItem({ data: { runId: id, caseId: s.cases[i]!.id } });
         }
         if (!r.ok) throw new Error(r.error);
         setProgress({ done: i + 1, total: s.cases.length });

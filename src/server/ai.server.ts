@@ -10,7 +10,7 @@ export class AiError extends Error {
 }
 
 function key() {
-  const k = process.env.LOVABLE_API_KEY;
+  const k = process.env["LOVABLE_API_KEY"];
   if (!k) throw new AiError(500, "AI is not configured for this app.");
   return k;
 }
@@ -56,7 +56,7 @@ export async function generate(opts: {
     store: false,
     reasoning: { effort: "low" },
   };
-  if (opts.schema) body.text = { format: { type: "json_schema", name: opts.schema.name, schema: opts.schema.schema, strict: true } };
+  if (opts.schema) body["text"] = { format: { type: "json_schema", name: opts.schema.name, schema: opts.schema.schema, strict: true } };
   const res = await fetch(`${BASE}/responses`, {
     method: "POST",
     headers: { Authorization: `Bearer ${key()}`, "Content-Type": "application/json", "X-Lovable-AIG-SDK": "fetch" },

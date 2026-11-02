@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import type { AnswerResult } from "./policy";
 
-type Fail = { ok: false; error: string; status?: number };
+type Fail = { ok: false; error: string; status?: number | undefined };
 const fail = (e: unknown): Fail => {
   const err = e as { status?: number; message?: string };
   console.error(e);
@@ -89,7 +89,7 @@ export const resetDemo = createServerFn({ method: "POST" }).handler(async (): Pr
     await db.from("documents").delete().neq("id", none);
     await db.from("test_cases").delete().neq("id", none);
     for (let i = 0; i < SEED_DOCUMENTS.length; i++) {
-      const d = SEED_DOCUMENTS[i];
+      const d = SEED_DOCUMENTS[i]!;
       const id = `00000000-0000-0000-0000-00000000000${i + 1}`;
       const { error } = await db.from("documents").insert({ id, title: d.title, content: d.content, is_seed: true });
       if (error) throw error;
