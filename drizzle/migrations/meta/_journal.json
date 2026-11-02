@@ -8,6 +8,13 @@
       "when": 1793638158366,
       "tag": "0000_policydesk_schema_and_seed",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1793639096446,
+      "tag": "0001_scope_public_reads",
+      "breakpoints": true
     }
   ]
 }

@@ -23,6 +23,7 @@ export type Database = {
           embedding: string | null
           heading: string
           id: string
+          is_public: boolean
         }
         Insert: {
           chunk_index: number
@@ -32,6 +33,7 @@ export type Database = {
           embedding?: string | null
           heading: string
           id?: string
+          is_public?: boolean
         }
         Update: {
           chunk_index?: number
@@ -41,6 +43,7 @@ export type Database = {
           embedding?: string | null
           heading?: string
           id?: string
+          is_public?: boolean
         }
         Relationships: [
           {
@@ -57,6 +60,7 @@ export type Database = {
           content: string
           created_at: string
           id: string
+          is_public: boolean
           is_seed: boolean
           title: string
         }
@@ -64,6 +68,7 @@ export type Database = {
           content: string
           created_at?: string
           id?: string
+          is_public?: boolean
           is_seed?: boolean
           title: string
         }
@@ -71,6 +76,7 @@ export type Database = {
           content?: string
           created_at?: string
           id?: string
+          is_public?: boolean
           is_seed?: boolean
           title?: string
         }
@@ -90,6 +96,7 @@ export type Database = {
           expected_facts: string
           expected_source: string | null
           id: string
+          is_public: boolean
           overall_pass: boolean
           position: number
           question: string
@@ -110,6 +117,7 @@ export type Database = {
           expected_facts: string
           expected_source?: string | null
           id?: string
+          is_public?: boolean
           overall_pass?: boolean
           position?: number
           question: string
@@ -130,6 +138,7 @@ export type Database = {
           expected_facts?: string
           expected_source?: string | null
           id?: string
+          is_public?: boolean
           overall_pass?: boolean
           position?: number
           question?: string
@@ -156,6 +165,7 @@ export type Database = {
           created_at: string
           finished_at: string | null
           id: string
+          is_public: boolean
           overall_pct: number | null
           status: string
           total: number
@@ -168,6 +178,7 @@ export type Database = {
           created_at?: string
           finished_at?: string | null
           id?: string
+          is_public?: boolean
           overall_pct?: number | null
           status?: string
           total?: number
@@ -180,6 +191,7 @@ export type Database = {
           created_at?: string
           finished_at?: string | null
           id?: string
+          is_public?: boolean
           overall_pct?: number | null
           status?: string
           total?: number
@@ -192,6 +204,7 @@ export type Database = {
           expected_facts: string
           expected_source: string | null
           id: string
+          is_public: boolean
           position: number
           question: string
           should_abstain: boolean
@@ -201,6 +214,7 @@ export type Database = {
           expected_facts: string
           expected_source?: string | null
           id?: string
+          is_public?: boolean
           position: number
           question: string
           should_abstain?: boolean
@@ -210,6 +224,7 @@ export type Database = {
           expected_facts?: string
           expected_source?: string | null
           id?: string
+          is_public?: boolean
           position?: number
           question?: string
           should_abstain?: boolean
